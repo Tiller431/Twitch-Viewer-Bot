@@ -7,7 +7,7 @@ from colorama import Fore
 from pystyle import Center, Colors, Colorate
 import os
 import time
-
+import threading
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def check_for_updates():
@@ -35,7 +35,32 @@ def print_announcement():
     except:
         print("Could not retrieve announcement from GitHub.\n")
 
+def start_browser(proxy_url, twitch_username):
+    chrome_path = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    driver_path = 'chromedriver.exe'
 
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    chrome_options.add_argument('--disable-logging')
+    chrome_options.add_argument('--log-level=3')
+    chrome_options.add_argument('--disable-extensions')
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument("--mute-audio")
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    driver = webdriver.Chrome(options=chrome_options)
+
+    driver.get(proxy_url)
+
+    driver.execute_script("window.open('" + proxy_url + "')")
+    driver.switch_to.window(driver.window_handles[-1])
+    driver.get(proxy_url)
+
+    text_box = driver.find_element(By.ID, 'url')
+    text_box.send_keys(f'www.twitch.tv/{twitch_username}')
+    text_box.send_keys(Keys.RETURN)
+
+    input()
+    driver.quit()
 
 def main():
     if not check_for_updates():
@@ -107,32 +132,16 @@ def main():
     print(Colors.red, Center.XCenter("Viewers Send. Please don't hurry. If the viewers does not arrive, turn it off and on and do the same operations"))
 
 
-    chrome_path = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
-    driver_path = 'chromedriver.exe'
-
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-    chrome_options.add_argument('--disable-logging')
-    chrome_options.add_argument('--log-level=3')
-    chrome_options.add_argument('--disable-extensions')
-    chrome_options.add_argument('--headless')
-    chrome_options.add_argument("--mute-audio")
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    driver = webdriver.Chrome(options=chrome_options)
-
-    driver.get(proxy_url)
-
+    threads = []
     for i in range(proxy_count):
-        driver.execute_script("window.open('" + proxy_url + "')")
-        driver.switch_to.window(driver.window_handles[-1])
-        driver.get(proxy_url)
-
-        text_box = driver.find_element(By.ID, 'url')
-        text_box.send_keys(f'www.twitch.tv/{twitch_username}')
-        text_box.send_keys(Keys.RETURN)
+        thread = threading.Thread(target=start_browser, args=(proxy_url, twitch_username))
+        thread.start()
+        threads.append(thread)
+        
+    for thread in threads:
+        thread.join()
 
     input(Colorate.Vertical(Colors.red_to_blue, "Viewers have all been sent. You can press enter to withdraw the views and the program will close."))
-    driver.quit()
 
 
 if __name__ == '__main__':
