@@ -7,6 +7,7 @@ from colorama import Fore
 from pystyle import Center, Colors, Colorate
 import os
 import time
+import threading
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -24,9 +25,6 @@ def check_for_updates():
         return True
 
 
-def main():
-    if not check_for_updates():
-        return
 def print_announcement():
     try:
         r = requests.get("https://raw.githubusercontent.com/Kichi779/Twitch-Viewer-Bot/main/announcement.txt", headers={"Cache-Control": "no-cache"})
@@ -35,13 +33,32 @@ def print_announcement():
     except:
         print("Could not retrieve announcement from GitHub.\n")
 
+def open_browser(proxy_url, twitch_username):
+    chrome_path = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    driver_path = 'chromedriver.exe'
 
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    chrome_options.add_argument('--disable-logging')
+    chrome_options.add_argument('--log-level=3')
+    chrome_options.add_argument('--disable-extensions')
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument("--mute-audio")
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    driver = webdriver.Chrome(options=chrome_options)
+
+    driver.get(proxy_url)
+
+    text_box = driver.find_element(By.ID, 'url')
+    text_box.send_keys(f'www.twitch.tv/{twitch_username}')
+    text_box.send_keys(Keys.RETURN)
+
+    return driver
 
 def main():
     if not check_for_updates():
         return
-    print_announcement()
-    
+    announcement = print_announcement()
 
     os.system(f"title Kichi779 - Twitch Viewer Bot @kichi#0779 ")
 
@@ -59,13 +76,11 @@ def main():
  Improvements can be made to the code. If you're getting an error, visit my discord.
                              Discord discord.gg/AFV9m8UXuT    
                              Github  github.com/kichi779    """)))
-    announcement = print_announcement()
     print("")
     print(Colors.red, Center.XCenter("ANNOUNCEMENT"))
     print(Colors.yellow, Center.XCenter(f"{announcement}"))
     print("")
     print("")
-    
 
     proxy_servers = {
         1: "https://www.blockaway.net",
@@ -106,38 +121,20 @@ def main():
     print('')
     print(Colors.red, Center.XCenter("Viewers Send. Please don't hurry. If the viewers does not arrive, turn it off and on and do the same operations"))
 
-
-    chrome_path = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
-    driver_path = 'chromedriver.exe'
-
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-    chrome_options.add_argument('--disable-logging')
-    chrome_options.add_argument('--log-level=3')
-    chrome_options.add_argument('--disable-extensions')
-    chrome_options.add_argument('--headless')
-    chrome_options.add_argument("--mute-audio")
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    driver = webdriver.Chrome(options=chrome_options)
-
-    driver.get(proxy_url)
+    drivers = []
 
     for i in range(proxy_count):
-        driver.execute_script("window.open('" + proxy_url + "')")
-        driver.switch_to.window(driver.window_handles[-1])
-        driver.get(proxy_url)
+        driver = open_browser(proxy_url, twitch_username)
+        drivers.append(driver)
 
-        text_box = driver.find_element(By.ID, 'url')
-        text_box.send_keys(f'www.twitch.tv/{twitch_username}')
-        text_box.send_keys(Keys.RETURN)
+    input(Colorate.Vertical(Colors.red_toblue, "Viewers have all been sent. You can press enter to withdraw the views and the program will close."))
 
-    input(Colorate.Vertical(Colors.red_to_blue, "Viewers have all been sent. You can press enter to withdraw the views and the program will close."))
-    driver.quit()
+    for driver in drivers:
+        driver.quit()
 
 
 if __name__ == '__main__':
     main()
-
 # ==========================================
 # Copyright 2023 Kichi779
 
